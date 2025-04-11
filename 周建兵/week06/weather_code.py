@@ -1,5 +1,6 @@
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+from sklearn.preprocessing import MinMaxScaler
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
@@ -28,6 +29,10 @@ df = df.dropna()
 # 日期转换
 df["Date"] = pd.to_datetime(df["Date"])
 df = df.sort_values(by="Date")
+
+# 归一化最高气温
+scaler = MinMaxScaler(feature_range=(0, 1))
+df["MaxTemp"] = scaler.fit_transform(df[["MaxTemp"]])
 
 # 创建序列
 def create_sequences(data, seq_length, pred_length):
@@ -66,10 +71,8 @@ class WeatherRNN(nn.Module):
         h0 = torch.zeros(2, x.size(0), 64).to(x.device)  # num_layers=2
         out, _ = self.rnn(x, h0)
         return self.fc(out[:, -1, :])
-import matplotlib.pyplot as plt 
 
 import matplotlib.pyplot as plt
-
 def plot_series(series, y=None, y_pred=None, seq_length=30, pred_length=5):
     # 将张量转换为numpy数组并调整维度
     if isinstance(series, torch.Tensor):
@@ -138,7 +141,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 writer = SummaryWriter()
 
 # 训练
-num_epochs = 5
+num_epochs = 50
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
@@ -162,7 +165,9 @@ for epoch in range(num_epochs):
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Test Loss: {test_loss.item():.4f}")
     
 # 绘制包含真实值和预测结果的对比图
-test_pred = model(X_test[:15])  # 获取预测结果
+model.eval()
+with torch.no_grad():
+    test_pred = model(X_test[:15])
 plot_series(
     series=X_test[:15], 
     y=y_test[:15],
