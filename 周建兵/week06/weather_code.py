@@ -156,13 +156,11 @@ for epoch in range(num_epochs):
     model.eval()
     
     with torch.no_grad():
-       
         test_outputs = model(X_test)
         test_loss = criterion(test_outputs, y_test)
         writer.add_scalar("Loss/test", test_loss.item(), epoch)
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Test Loss: {test_loss.item():.4f}")
     
-        
 # 绘制包含真实值和预测结果的对比图
 test_pred = model(X_test[:15])  # 获取预测结果
 plot_series(
@@ -171,7 +169,7 @@ plot_series(
     y_pred=test_pred,
     seq_length=30,
     pred_length=5
-)
+)       
 # 保存模型
 os.makedirs("models", exist_ok=True)
 torch.save(model.state_dict(), "models/weather_rnn.pth")
